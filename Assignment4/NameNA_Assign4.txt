@@ -1,0 +1,346 @@
+#Assignment 4
+#Shailesh Sridhar - 01FB16ECS349
+#Shashank Prabhakar - 01FB16ECS356
+#Shrey Tiwari - 01FB16ECS368
+
+#Question1
+
+#The different types of missing values are:
+# 1) Missing completely at random (MCAR)
+# 2) Missing at random (MAR)
+# 3) Not missing at random (NMAR)
+
+#MCAR is when the data points are points are missing non-uniformly, with no visible pattern, 
+#that is, completely at random.
+
+#MAR means the tendency for a data point to be missing is not related to the missing data, 
+#but it is related to some of the observed data. For instance, 
+
+#NMAR occurs when survey questions are not answered by the participants.
+
+#Problems due to missing data:
+#When an important attribute has missing values, it can lead to incorrect conclusions in studies.
+#It can pose a problem when analysing a dataset and accounting for it is usually not 
+#so straightforward. Not filling missing data can potentially wipe out useful insights from our data.
+#It takes up more effort and computational resources and can potentially introduce bias into the results. 
+
+rm(list=ls())
+
+tips_tailored <- read.csv("~/Sem5/DA/R Programming/Assignment 4/Question1/tips_tailored.csv")
+tips <- read.csv("~/Sem5/DA/R Programming/Assignment 4/Question1/tips.csv")
+library('plyr')
+library('dplyr')
+
+
+#Part 1
+tips1 <- tips_tailored
+tips1$Odds[which(is.na(tips1$Odds))] <- mean(tips1$Odds, na.rm = TRUE)
+
+#Part 2
+tips2 <- tips_tailored
+tips2$Odds[which(is.na(tips2$Odds))] <-median(tips2$Odds, na.rm = TRUE)
+
+#Part 3
+tips3 <- tips_tailored
+test <- subset(tips3,is.na(tips3$Odds) == TRUE)
+cols <- tips3[,c("Horse", "Odds")]
+cols <- aggregate(cols[, 2], list(cols$Horse), mean, na.rm = TRUE)
+names(cols) <- c("Horse", "AvgOdds")
+for (i in 1:nrow(tips3))
+{
+  if(is.na(tips3$Odds[i]) == TRUE)
+  {
+    temp <- cols[cols$Horse == tips3[i, "Horse"],]
+    if(is.nan(temp[,2]))
+      tips3[i, "Odds"] <- 0
+    else
+      tips3[i, "Odds"] <- temp[,2]
+  }
+}
+
+
+#Part 4
+tips4 <- tips_tailored
+#Fill in missing value with mean of left and right neighbours
+for (i in 1:nrow(tips4)) 
+{
+  if(is.na(tips4$Odds[i])==TRUE)
+  {
+    tips4$Odds[i] <- (tips4$Odds[i-1] + tips4$Odds[i+1])/2
+  }
+}
+
+#Part 5
+#install.packages('mice')
+#The mice package in R helps in imputing missing values with plausible data values. 
+#These plausible values are drawn from a distribution specifically designed for each missing datapoint.
+
+#The mice package provides an md.pattern() function to get a better understanding of the pattern 
+#of missing data. A function mice() takes care of the imputing process
+#Paramters to mice are dataset, number of imputed datasets, methods of imputation and seed value.
+#methods(mice) can be used to see the methods of imputation that are available
+#Here, we can use mice.impute.mean method to impute missing data with the mean of the column.
+#Default value for number of imputed data sets is 5.
+#We can get the data with the filled values using the complete() function
+
+
+
+
+#Root Mean Squared Errors
+library('seewave')
+diff1 <- tips$Odds - tips1$Odds #Mean substituted
+diff2 <- tips$Odds - tips2$Odds #Median substituted
+diff3 <- tips$Odds - tips3$Odds #Mean for that horse
+diff4 <- tips$Odds - tips4$Odds #Interpolated
+rms(diff1)
+rms(diff2)
+rms(diff3)
+rms(diff4)
+
+#As we see, the RMS Error for the Median subsituted values is the least. This can also be verfied from
+#the graph that has been plotted below. The deviation of the Median substituted line from the
+#original data is the elast when compared to other lines
+
+index_array <- which(is.na(tips_tailored$Odds))
+#Creating empty lists with 
+tips_plot <- filter(tips_tailored, Date == '1900')
+tips_plot1 <- filter(tips_tailored, Date == '1900')
+tips_plot2 <- filter(tips_tailored, Date == '1900')
+tips_plot3 <- filter(tips_tailored, Date == '1900')
+tips_plot4 <- filter(tips_tailored, Date == '1900')
+
+
+for (i in 1:length(index_array))
+{
+  x <- tips[index_array[i],]
+  tips_plot <- rbind(tips_plot,x)
+  
+  x <- tips1[index_array[i],]
+  tips_plot1 <- rbind(tips_plot1,x)
+  
+  x <- tips2[index_array[i],]
+  tips_plot2 <- rbind(tips_plot2,x)
+  
+  x <- tips3[index_array[i],]
+  tips_plot3 <- rbind(tips_plot3,x)
+  
+  x <- tips4[index_array[i],]
+  tips_plot4 <- rbind(tips_plot4,x)
+}
+tips_plot <- tips_plot[order(tips_plot$ID),]
+tips_plot1 <- tips_plot1[order(tips_plot1$ID),]
+tips_plot2 <- tips_plot2[order(tips_plot2$ID),]
+tips_plot3 <- tips_plot3[order(tips_plot3$ID),]
+tips_plot4 <- tips_plot4[order(tips_plot4$ID),]
+
+
+
+library('plotly')
+plot_ly(tips_plot, x = ~ID, y = ~Odds, type = 'scatter', mode = 'lines',name = 'Original Data',line = list(color = '#5DA5DA', width = 3))%>%
+  add_trace(y = ~tips_plot1$Odds, name = 'Mean substituted', line = list(color = '#FAA43A', width = 3))%>%
+  add_trace(y = ~tips_plot2$Odds, name = 'Median substituted', line = list(color = '#60BD68', width = 3))%>%
+  add_trace(y = ~tips_plot3$Odds, name = 'Mean for that horse', line = list(color = '#DECF3F', width = 3),connectgaps = TRUE)%>%
+  add_trace(y = ~tips_plot4$Odds, name = 'Interpolated', line = list(color = '#F15854', width = 3))%>%
+  layout(title = 'Comparison of Imputations')
+
+#Filling the missing values with the median is best suited for this data, as from the graphs,
+#we can see that the deviation of that line from the original data, at the missing points is the
+#least compared to other methods.
+
+
+###Question 2###
+
+#Clearing data
+rm(list = ls())
+
+#Importing the datasets.
+tips_tailored <- read.csv("~/Sem5/DA/R Programming/Assignment 4/Question2/tips_tailored.csv")
+tips <- read.csv("~/Sem 5/DA/R Programming/Assignment 4/Question2/tips.csv")
+
+#Reassigning the datasets to variables.
+test <- tips_tailored
+actual <- tips
+
+#Importing Library
+library(caret)
+
+##Part A##
+#Confusion Matrix [GroundTruth and Predicted.Results]
+matrix <- confusionMatrix(factor(test$Predicted.Results, levels = c("Win", "Lose")), factor(test$Result, levels = c("Win", "Lose")), positive = "Win", dnn = c("Predicted", "GroundTruth"))
+print(matrix)
+
+#Calucations:
+# Accuracy = (TP + TN) / (TP + TN + FP + FN) = (3274 + 28670) / (3279 + 28670 + 4404 + 1895)
+# Accuracy = 0.8353
+
+# Precision = TP / (TP + FP) = 3279 / (3279 + 1895)
+# Precision = 0.6337
+
+# Recall = TP / (TP + FN) = 3279 / (3279 + 4404)
+# Recall = 0.4267
+
+# Misclassification rate = 1 - Accuracy = 1 - 0.8353 = 0.1647
+
+# F1 score = 2 * (Precision * Recall) / (Precision + Recall) = 2 * (0.6337 * 0.4267) / (0.6337 + 0.4267)
+# F1 score = 0.5099
+
+# Fbeta score (beta = 2) = 0.4566
+# Fbeta score (beta = 0.5) = 0.5777
+
+##Part B##
+#Adding column 'Predictions1' with all values equal to false
+test$Predicted1 <- c("Lose")
+levels(test$Predicted1) <- c("Lose","Win")
+
+#Confusion Matrix [ GroundTruth and Predicted1 ]
+matrix1 <- confusionMatrix(factor(test$Predicted1, levels = c("Win", "Lose")), factor(test$Result, levels = c("Win", "Lose")), positive = "Win", dnn = c("Predicted", "GroundTruth"))
+print(matrix1)
+
+#Calculations:(Accuracy, Precision, Recall, Misclassification Rate)
+# Accuracy = (TP + TN) / (TP + TN + FP + FN) = (0 + 30565) / (0 + 30565 + 0 + 7863)
+# Accuracy = 0.7991
+
+# Recall = TP / (TP + FN) = 0 / (0 + 7863)
+# Recall = 0
+
+# Precision = TP / (TP + FP) = 0 / (0 + 0)
+# Precision = Not defined
+
+# Misclassification rate = 1 - Accuracy = 1 - 0.7991
+# Misclassification rate = 0.2008
+
+# This indicates that even though the accuracy of the second model is decent, it is an unacceptable model as the values of recall and precision are very bad. 
+
+
+##Part C##
+
+# Why is accuracy not enough for the evaluation of a classification model?
+# When we use accuracy, we assign equal cost to false positives and false negatives.
+# When the data set is imbalanced - say it has 99% of instances in one class and only 1 %
+# in the other - there is a great way to lower the cost. Predicting that every instance belongs 
+# to the majority class will get you an accuracy of 99%.
+# The problem starts when the actual costs that we assign to every error are not equal.
+# If we deal with a rare but fatal disease, the cost of failing to diagnose the disease of a sick
+# person is much higher than the cost of sending a healthy person to more tests.
+
+#Accuracy:
+# It is number of bets predicted correctly to the total number of bets.
+# It the first metric that can be used to give an idea about the model in general.
+# If the accuracy of the model is low to begin with, then there is no need of futher investigation.
+
+#Precision:
+# In context of the dataset and the model, we can describe precision as:
+# Out of the bets that were predicted as going to be won, how many were actually won.
+
+#Recall:
+# In context of the dataset and the model, we can describe recall as:
+# Out of the bets that were actually won, how many were classified as won.
+
+
+#Misclassification Rate:
+# In context of the dataset and the model, we can describe misclassication rate as:
+# The as the number of bets that were predicted/classified wrongly to the total number of bets.
+
+#F-Beta Score:
+# The F-beta score is the weighted harmonic mean of precision and recall, reaching its optimal value at 1 and
+# its worst value at 0. Beta represents the importance of precision. It means that as the beta value increases,
+# you value precision more.
+
+# Thus we see that the metrics that we choose to evaluate our machine learning model are very important.
+# In general there is no single right metric that can alone best describe any model. To understand 
+# different aspects of the model we use different metrics.
+
+
+#Question 3
+
+#Reading the datasets:
+df16 = read.csv("C:\\Users\\shail\\OneDrive\\Documents\\sem5\\Data_Analytics\\Data Analytics\\Assignments\\Assignment4\\Data2016.csv")
+df15 = read.csv("C:\\Users\\shail\\OneDrive\\Documents\\sem5\\Data_Analytics\\Data Analytics\\Assignments\\Assignment4\\Data2015.csv")
+df17 = read.csv("C:\\Users\\shail\\OneDrive\\Documents\\sem5\\Data_Analytics\\Data Analytics\\Assignments\\Assignment4\\Data2017.csv")
+
+#Finding the common countries:
+commonCountries = intersect(intersect(df15$Country,df16$Country),df17$Country)
+
+#Splitting the data into testing and training sets:
+train = subset(rbind(df15,df16),Country %in% commonCountries)
+test = subset(df17,Country %in% commonCountries)
+
+#Building the models:
+model1 = lm(formula =Happiness.Score  ~ Economy..GDP.per.Capita. +Family + year + Health..Life.Expectancy., data = train)
+model2 = lm(formula =Happiness.Score  ~ Economy..GDP.per.Capita. + year + Health..Life.Expectancy., data = train)
+
+#Predicting the values for the testing data: 
+pred1 = predict(model1,test)
+pred2 = predict(model2,test)
+
+#Defining function for RMS error
+rmsError <- function(v1,v2){
+  vd = v1 - v2
+  vd2 = vd^2
+  
+  return(sqrt(sum(vd2)/length(vd2)))
+}
+
+#Errors
+e1 = rmsError(pred1,test$Happiness.Score)
+e2 = rmsError(pred2,test$Happiness.Score)
+
+#Output:
+print(e1)
+print(e2)
+
+#Thus we see that model 2 is better than Model1 as it has a lower value of rms error.
+
+
+#Question 4
+
+#Packages:
+install.packages("caret")
+library("caret")
+install.packages("e1071")
+library("e1071")
+
+#Reading Data
+df = read.csv("C:\\Users\\shail\\OneDrive\\Documents\\sem5\\Data_Analytics\\Data Analytics\\Assignments\\Assignment4\\School_Data.csv")
+
+#Filtering:
+noOfPassedCandidates = nrow(subset(df,df$Pass == 1))
+noOfFailedCandidates = nrow(subset(df,df$Pass == 0))
+failedCandidates = subset(df,df$Pass == 0)
+print(noOfPassedCandidates-noOfFailedCandidates)
+upsampledFailedCandidates = failedCandidates[sample(nrow(failedCandidates),(noOfPassedCandidates-noOfFailedCandidates),replace=TRUE),]
+
+
+newdf = rbind(df,upsampledFailedCandidates)
+y<-"Pass"
+x<-colnames(newdf)
+x2<-x[2:length(x)-1]
+
+params = "Pass~Day1+Day2+Day3+Day4+Day5+Senior+Class_Prefect+Athlete+popularity"
+model1 = glm(params,data=newdf,family=binomial(link="logit"))
+summary(model1)
+
+##from the summary we observe that the significant components are Day1,Day3,Day4,Athlete and popularity
+print("from the summary we observe that the significant components are Day1,Day3,Day4,Athlete and popularity")
+
+## AIC value mentioned in summary reis 876.3
+params2 = "Pass~Day1+Day3+Day4+Athlete+popularity"
+model2 = glm(params2,data=newdf,family=binomial(link="logit"))
+summary(model2)
+
+##AIC value mentioned in summary is 870.9
+print("AIC value mentioned in summary is 870.9")
+
+##As the AIC for the second model is lower(870.9<876.3), we can say that it is a better model than the first one 
+print("As the AIC for the second model is lower(870.9<876.3), we can say that it is a better model than the first one")
+
+test = read.csv("C:\\Users\\shail\\OneDrive\\Documents\\sem5\\Data_Analytics\\Data Analytics\\Assignments\\Assignment4\\Test - Sheet1.csv")
+colnames(test) = colnames(newdf)[2:11]
+
+res1 = predict(model1,test,type="response")
+res2 = predict(model2,test,type="response")
+model1Pred = as.factor(as.integer(as.logical(res1>0.5)))
+model2Pred = as.factor(as.integer(as.logical(res2>0.5)))
+
+CM1 = confusionMatrix(model1Pred,as.factor(test$Pass),dnn=c("Pass","Fail"))
+CM2 = confusionMatrix(model2Pred,as.factor(test$Pass),dnn=c("Pass","Fail"))

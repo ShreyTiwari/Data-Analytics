@@ -1,0 +1,14 @@
+#Question 3
+#Subquestion 3
+temp2_3 <- count(subset(athlete_events, is.na(Medal) == FALSE), c("ID", "Year"))
+temp <- order(-temp2_3["freq"])
+id <- temp2_3[temp[1],"ID"]
+year <- temp2_3[temp[1],"Year"]
+result2_3 <- subset(athlete_events, ID == id & Year == year)[c("ID", 
+                                                "Name", "Age", "Sex", 
+                                                "Height", "Weight", "Team",
+                                                "Season", "Year", "Event", "Medal")]
+cat("The player ID is: ", id,"\n")
+message("Note: ID is chosen here as different players could have same names.\n")
+cat("The player details are as follows:\n")
+print(result2_3)

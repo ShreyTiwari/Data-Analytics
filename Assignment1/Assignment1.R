@@ -1,0 +1,117 @@
+#Assignment 1 for Data Analytics
+#Dataset imported as athlete_events
+
+
+
+
+#Question 1
+
+#Subquestion 1
+#Using 'subset' function to provide the conditions for data extraction. 
+AllIndianWinners <- subset(athlete_events, Team == "India" & (is.na(Medal) == FALSE))
+#print(dim(AllIndianWinners))
+#Observing output we see that a few people who have won multiple times.
+IndianWinners <- unique(AllIndianWinners["Name"])  #Removing the duplicates.
+print(IndianWinners)
+print(dim(IndianWinners)[1])
+
+#Subquestion 2
+#Online resources indicate that the 'count' function could help us out here.
+#Importing the library to which count function belongs.
+library(plyr)
+#Using count function to aggrigate the results using 'AllIndianWinners'
+medals1960 <- subset(AllIndianWinners, Year >= 1960)  #Find winners who won from 1960
+unique_medals1960 <- count(medals1960, c("Year", "Event", "Medal")) #Consolidate Teams
+print(dim(unique_medals1960)[1])  #Print medals won for different sports.
+
+#Subquestion 3
+#Aggrigating the sports.
+MaxSport <- count(unique_medals1960["Event"])
+#Printing the sport with maximum count.
+indexMax <- order(-MaxSport["freq"])[1]
+print(MaxSport[indexMax,])
+
+
+
+
+#Question 2
+
+#Subquestion 1
+#we store occurrences of the (playerID, Year) tuple.
+temp2_1 <- count(athlete_events, c("ID", "Year"))
+#Now we select only those ID's that have occured more than once.
+result2_1 <- subset(count(temp2_1["ID"]), freq > 1)
+#Finally we print the total number of such participants.
+print(dim(unique(result2_1))[1])
+
+#Subquestion 2
+#Here we do a similar thing as above but with a small difference.
+#In the first step itself we subset athlete_events to separate out the winners.
+temp2_2 <- count(subset(athlete_events, is.na(Medal) == FALSE), c("ID", "Year"))
+result2_2 <- subset(count(temp2_2["ID"]), freq > 1)
+print(dim(result2_2)[1])
+
+#Subquestion 3
+#We separate out the winners and count the medals won per year by each participant.
+temp2_3 <- count(subset(athlete_events, is.na(Medal) == FALSE), c("ID", "Year"))
+#Finding out the max frequency, i.e max no. of medals won.
+temp <- order(-temp2_3["freq"])
+#Getting the ids of participants who won max number of medals.
+ids <- subset(temp2_3, freq == temp2_3[temp[1], "freq"])
+#Printing the result.
+cat("The ID's of the players, year of winnings and total winnings are:\n")
+print(ids)
+
+
+
+
+#Question 4
+
+#Subquestion 1
+#Get the total number of medals won by India( such that team sports contribute to one medal only )
+tot_medals <- count(AllIndianWinners, c("Year", "Event", "Medal"))
+#Plot histogram, give title, label axis and specify the number of bins.
+hist(tot_medals$Year,
+     main = "Histogram for Indian Winners",
+     xlab = "Year",
+     ylab = "Total number of Medals",
+     xlim = c(1900, 2018),
+     breaks = 20)
+
+hist(AllIndianWinners$Year,
+     main = "Histogram for Indian Winners",
+     xlab = "Year",
+     ylab = "Total number of winning PLAYERS",
+     xlim = c(1900, 2018),
+     breaks = 20)
+
+#Subquestion 2
+#Answers written in the assignment blue book.
+
+#Subquestion 3
+#Getting the gold medal winners.
+AllWinners <- subset(athlete_events, Medal == "Gold" & Sport == "Athletics")
+#Plotting the scatter plot between Age and Height.
+plot(AllWinners$Age, AllWinners$Height,
+     main = "Age vs Height: Gold Medal Winners",
+     xlab = "Age",
+     ylab = "Height in cm")
+#Calculating the correlation.
+#Cor() function is present in library ggpubr.
+library(ggpubr)
+relation <- subset(AllWinners, is.na(Age)==FALSE & is.na(Height)==FALSE)[c("Age", "Height")]
+cat("The correlation coefficient is: ",cor(relation[1], relation[2]),"\n")
+#Comments written in the blue book.
+
+
+
+
+#Question 5
+#Answers written in the blue book.
+
+
+
+
+#Question 3
+
+#Subquestion 1

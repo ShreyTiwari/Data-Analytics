@@ -1,0 +1,255 @@
+#Team: "Name: NA"
+#Shailesh Sridhar 01FB16ECS349
+#Shashank Prabhakar 01FB16ECS356
+#Shrey Tiwari 01FB16ECS368
+
+rm(list=ls())
+
+library('plyr')
+library('plotly')
+library('dplyr')
+library("tm")
+library("SnowBallC")
+library("RColorBrewer")
+library("wordcloud")
+
+#Question1
+rain<-read.csv("C:\\Users\\shail\\Downloads\\RainfallData.csv")
+rain['YYYYMM']<-as.Date(paste0(as.character(rain$YYYYMM), '01'), format='%Y%m%d')
+colnames(rain)[1] <- "Timeline"
+
+####Please note that gaps in the graph have been connected via interpolation - Lerp Method
+karnataka<-subset(rain,Description=='Karnataka' & !is.na(Timeline))
+tn<-subset(rain,Description=='Tamil Nadu' & !is.na(Timeline))
+ker<-subset(rain,Description =='Kerala' & !is.na(Timeline))
+aru<-subset(rain,Description =='Arunachal Praesh' & !is.na(Timeline))
+bih<-subset(rain,Description =='Bihar' & !is.na(Timeline))
+mad<-subset(rain,Description =='Madhya Pradesh' & !is.na(Timeline))
+mah<-subset(rain,Description =='Maharashtra' & !is.na(Timeline))
+ori<-subset(rain,Description =='Orissa' & !is.na(Timeline))
+wes<-subset(rain,Description =='West Bengal' & !is.na(Timeline))
+
+plot_ly(karnataka, x = ~Timeline, y = ~as.numeric(as.character(karnataka$Value)), type = 'scatter', mode = 'lines',name = 'Karnataka',line = list(color = '#5DA5DA', width = 3),connectgaps = TRUE)%>%
+  add_trace(y = ~as.numeric(as.character(tn$Value)), name = 'Tamil Nadu', line = list(color = '#FAA43A', width = 3))%>%
+  add_trace(y = ~as.numeric(as.character(ker$Value)), name = 'Kerala', line = list(color = 'Green', width = 3))%>%
+  add_trace(y = ~as.numeric(as.character(aru$Value)), name = 'Arunachal Pradesh', line = list(color = 'Red', width = 3))%>%
+  add_trace(y = ~as.numeric(as.character(bih$Value)), name = 'Bihar', line = list(color = 'grey', width = 3))%>%
+  add_trace(y = ~as.numeric(as.character(mad$Value)), name = 'Madhya Pradesh', line = list(color = 'Orange', width = 3))%>%
+  add_trace(y = ~as.numeric(as.character(mah$Value)), name = 'Maharashtra', line = list(color = 'Yellow', width = 3))%>%
+  add_trace(y = ~as.numeric(as.character(ori$Value)), name = 'Orissa', line = list(color = 'Violet', width = 3))%>%
+  add_trace(y = ~as.numeric(as.character(wes$Value)), name = 'West Bengal', line = list(color = 'Cyan', width = 3))%>%
+#Slider
+layout(
+  title = "Rainfall in Indian States",
+  xaxis = list(
+    rangeselector = list(
+      buttons = list(
+        list(
+          count = 3,
+          label = "3 Months",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 6,
+          label = "6 Months",
+          step = "month",
+          stepmode = "backward"),
+        list(
+          count = 1,
+          label = "1 Year",
+          step = "year",
+          stepmode = "backward"),
+        list(step = "all",label="1997-2016"))),
+    
+    rangeslider = list(type = "date")),
+  
+  #Drop down menu
+  yaxis = list(karnataka['Value'],title = "Rainfall in cm"),
+  updatemenus = list(
+    list(
+      y = 0.7,
+      buttons = list(
+        list(method = "restyle",
+             args = list("visible", list(TRUE, FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)),
+             label = "Karnataka"),
+        list(method = "restyle",
+             args = list("visible", list(FALSE, TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)),
+             label = "Tamil Nadu"),
+        list(method = "restyle",
+             args = list("visible", list(FALSE, FALSE, TRUE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE)),
+             label = "Kerala"),
+        list(method = "restyle",
+             args = list("visible", list(FALSE, FALSE, FALSE,TRUE,FALSE,FALSE,FALSE,FALSE,FALSE)),
+             label = "Arunachal Pradesh"),
+        list(method = "restyle",
+             args = list("visible", list(FALSE, FALSE, FALSE,FALSE,TRUE,FALSE,FALSE,FALSE,FALSE)),
+             label = "Bihar"),
+        list(method = "restyle",
+             args = list("visible", list(FALSE, FALSE, FALSE,FALSE,FALSE,TRUE,FALSE,FALSE,FALSE)),
+             label = "Madhya Pradesh"),
+        list(method = "restyle",
+             args = list("visible", list(FALSE, FALSE, FALSE,FALSE,FALSE,FALSE,TRUE,FALSE,FALSE)),
+             label = "Maharashtra"),
+        list(method = "restyle",
+             args = list("visible", list(FALSE, FALSE, FALSE,FALSE,FALSE,FALSE,FALSE,TRUE,FALSE)),
+             label = "Orissa"),
+        list(method = "restyle",
+             args = list("visible", list(FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE, FALSE, TRUE)),
+             label = "West Bengal")
+       
+        
+        
+      ))
+  )
+)
+
+
+#Question2
+tn <- read.csv("~/Sem 5/DA/R Programming/Assignment 3/TNAgri.csv")
+#Group by crop name and area
+group_tn<- tn%>% group_by(Crop) %>% arrange(Crop,Area)
+#Sum up the area for each crop
+x<-(aggregate(group_tn$Area, by=list(Category=group_tn$Crop),FUN=sum))
+x<-(setNames(x,c("Crop","Area")))
+x <- x[order(x$Area),] 
+
+
+#Omitting 'Total foodgrain' as it cannot be considered as a crop
+x<-filter(x,Crop!="Total foodgrain")
+
+top_five_all<-tail(x,5)
+plot_ly(top_five_all, labels = ~Crop, values = ~Area, type = 'pie',
+        marker = list(colors=c("#F15854", "#DECF3F" ,"#60BD68" ,"#FAA43A","#5DA5DA"))) %>%
+  layout(title = 'Top 5 Crops in Tamil Nadu Based on Area 1997-2013',
+         xaxis = list(showgrid = TRUE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+
+years <- unique(tn['Crop_Year'])
+rice<-subset(tn,Crop=="Rice")
+rice<-aggregate(rice$Area,by=list(Category=rice$Crop_Year),FUN=sum)
+rice<-(setNames(rice,c("Year","Area")))
+
+gn<-subset(tn,Crop=="Groundnut")
+gn<-aggregate(gn$Area,by=list(Category=gn$Crop_Year),FUN=sum)
+gn<-(setNames(gn,c("Year","Area")))
+
+sg<-filter(tn,Crop=="Sugarcane")
+sg<-aggregate(sg$Area,by=list(Category=sg$Crop_Year),FUN=sum)
+sg<-(setNames(sg,c("Year","Area")))
+
+#Missing Data in Jowar
+jow<-filter(tn,Crop=="Jowar")
+jow<-aggregate(jow$Area,by=list(Category=jow$Crop_Year),FUN=sum)
+jow<-(setNames(jow,c("Year","Area")))
+jow<-rbind(jow,c('2010',NA))
+jow<-rbind(jow,c('2012',NA))
+jow <- jow[order(jow$Year),]
+
+ur<-filter(tn,Crop=="Urad")
+ur<-aggregate(ur$Area,by=list(Category=ur$Crop_Year),FUN=sum)
+ur<-(setNames(ur,c("Year","Area")))
+
+#With Rice
+plot_ly(rice, x = ~Year, y = ~Area, type = 'scatter', mode = 'lines',name = 'Rice',line = list(color = '#5DA5DA', width = 3))%>%
+  add_trace(y = ~gn$Area, name = 'Groundnut', line = list(color = '#FAA43A', width = 3))%>%
+  add_trace(y = ~sg$Area, name = 'Sugarcane', line = list(color = '#60BD68', width = 3))%>%
+  add_trace(y = ~jow$Area, name = 'Jowar', line = list(color = '#DECF3F', width = 3),connectgaps = TRUE)%>%
+  add_trace(y = ~ur$Area, name = 'Urad', line = list(color = '#F15854', width = 3))%>%
+  layout(title = 'Top 5 Crops in Tamil Nadu Based on Area 1997-2013 - Trends')
+
+
+#Without Rice, to study trends of remaining. Rice was overshadowing their trends in the previous graph
+plot_ly(gn, x = ~Year, y = ~Area, type = 'scatter', mode = 'lines',name = 'Groundnut',line = list(color = '#FAA43A', width = 3))%>%
+  add_trace(y = ~sg$Area, name = 'Sugarcane', line = list(color = '#60BD68', width = 3))%>%
+  add_trace(y = ~jow$Area, name = 'Jowar', line = list(color = '#DECF3F', width = 3),connectgaps = TRUE)%>%
+  add_trace(y = ~ur$Area, name = 'Urad', line = list(color = '#F15854', width = 3))%>%
+  layout(title = 'Crops in Tamil Nadu Based on Area 1997-2013 - Trends (Minus Rice)')
+
+
+#Question3
+#The dataset has many attributes. First we drop the unnecessary ones.
+#The columns are dropped based on many factors:
+# 1. Relevance to the Question asked.
+# 2. Can they be represented Visually?
+# 3. This there enough information present in that column( Mostly empty? ).
+
+#Dataset stored in dataframe ds
+ds <- GunViolence
+ds <- subset(ds, select = c(2:8, 15, 16, 18, 19))
+
+#Geo Styling
+g <- list(
+          scope = 'usa',
+          projection = list(type = 'albers usa'),
+          showland = TRUE,
+          landcolor = toRGB("gray95"),
+          subunitcolor = toRGB("gray85"),
+          countrycolor = toRGB("gray85"),
+          countrywidth = 0.5,
+          subunitwidth = 0.5
+         )
+
+p1 <- plot_geo(ds, lat = ~latitude, lon = ~longitude) %>%
+  add_markers(
+  text = ~paste(date, state, paste("Killed:", n_killed), paste("Injured:", n_injured), incident_characteristics, sep = "<br />"), 
+  size = I(8),
+  hoverinfo = "text"
+  )%>%
+  layout(
+    title = '<br />Gun Crimes In The US', geo = g
+  )
+
+#Setting API credentials
+Sys.setenv("plotly_username"="ShreyTiwari")
+Sys.setenv("plotly_api_key"="Y9vIEVgM1xunNQByAO9Y")
+
+# Creating a shareable link to the chart.
+chart_link1 = api_create(p1, filename = "crimes")
+chart_link1
+
+#Bar Chart for crimes in the various states.
+p2 <- plot_ly(count(ds, state), x = ~state, y = ~n)%>%
+  layout(title="Barplot for different states.",  
+         xaxis=list(title="State", showgrid = F),
+         yaxis=list(title="Frequency", showgrid = F))
+
+#Creating a shareable link to the chart
+#The below will open in a browser
+chart_link2 = api_create(p2, filename = "Distribution")
+chart_link2
+
+#Other inferences from the dataset are possible but here we limit ourselves to the question asked.
+
+
+#Question4
+df = read.csv("~/Sem 5/DA/R Programming/Assignment 3/NewYearResolution15.csv",header = TRUE,sep=",")
+df.Corpus = Corpus(VectorSource(df$text))
+df.Clean = tm_map(df.Corpus,PlainTextDocument)
+df.Clean = tm_map(df.Corpus,tolower)
+df.Clean = tm_map(df.Clean,removeNumbers)
+df.Clean = tm_map(df.Clean,removePunctuation)
+df.Clean = tm_map(df.Clean,stripWhitespace)
+df.Clean = tm_map(df.Clean,removeWords,stopwords("english"))
+df.Clean = tm_map(df.Clean,removeWords,c("fuck","shit"))
+wordcloud(df.Clean,max.words=200,random.color=TRUE,random.order=FALSE,rt.per=0.35,colors=brewer.pal(8,"Dark2"))
+
+
+
+l2 = ddply(df,.(Resolution_Category),summarize,freq=(length(Resolution_Category)))
+
+##pie chart of resolution Categories vs tweets####
+
+plot_ly(l2, labels = ~Resolution_Category, values = ~freq, type = 'pie') %>%
+  layout(title = 'Resolution Categories',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+###Bar plot of tweets vs resolution categories(female,male)
+lm = subset(df,gender=="male")
+lm = ddply(lm,.(Resolution_Category),summarize,freq=(length(Resolution_Category)))
+lf = subset(df,gender=="female")
+lf=ddply(lf,.(Resolution_Category),summarize,freq=(length(Resolution_Category)))
+plot_ly(lm, x = ~Resolution_Category, y = ~lm$freq, type = 'bar',name = "males")%>%
+  add_trace(y = ~lf$freq, name = 'females') %>%
+  layout(yaxis = list(title = 'Count'), barmode = 'stack')
